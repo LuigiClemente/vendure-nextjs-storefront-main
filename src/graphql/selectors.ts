@@ -374,6 +374,8 @@ export const ActiveOrderSelector = Selector('Order')({
             },
         },
     },
+
+    customFields: true
 });
 
 export type ActiveOrderType = FromSelector<typeof ActiveOrderSelector, 'Order', typeof scalars>;

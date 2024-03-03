@@ -8,7 +8,7 @@ export type ProductContainerType = {
     addingError?: string;
     handleVariant: (variant?: Variant) => void;
     handleAddToCart: () => void;
-    handleBuyNow: () => void;
+    handleBuyNow: (emails: string[]) => void;
     handleOptionClick: (groupId: string, id: string) => void;
     productOptionsGroups: ProductOptionsGroup[];
 };

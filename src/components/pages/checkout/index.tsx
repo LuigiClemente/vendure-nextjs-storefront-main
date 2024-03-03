@@ -1,6 +1,6 @@
 import { CheckoutLayout } from '@/src/layouts';
 import { InferGetServerSidePropsType } from 'next';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { OrderForm } from './components/OrderForm';
 import { useTranslation } from 'next-i18next';
 import { getServerSideProps } from './props';
@@ -11,11 +11,20 @@ import { ContentContainer } from '@/src/components/atoms';
 export const CheckoutPage: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = props => {
     const { t } = useTranslation('checkout');
     const { availableCountries, alsoBoughtProducts, eligibleShippingMethods, activeCustomer } = props;
+    const [emails, setEmails] = useState("")
+
+    useEffect(() => {
+        let value
+        // Get the value from local storage if it exists
+        value = localStorage.getItem("emails") || ""
+        setEmails(value)
+      }, [])
 
     return (
         <CheckoutLayout pageTitle={`${t('seoTitles.checkout')}`}>
             <Content>
                 <OrderForm
+                    emails={emails}
                     availableCountries={availableCountries}
                     shippingMethods={eligibleShippingMethods}
                     activeCustomer={activeCustomer}

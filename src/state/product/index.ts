@@ -12,7 +12,7 @@ const useProductContainer = createContainer<ProductContainerType, { product: Pro
     if (!initialState?.product) return productEmptyState;
     const { t } = useTranslation('common');
     const push = usePush();
-    const { addToCart } = useCart();
+    const { addToCart, updateOrderEmails } = useCart();
     const [selectedOptions, setSelectedOptions] = useState<{
         [key: string]: string;
     }>({});
@@ -87,9 +87,10 @@ const useProductContainer = createContainer<ProductContainerType, { product: Pro
         else setAddingError(t('select-options'));
     };
 
-    const handleBuyNow = async () => {
+    const handleBuyNow = async (emails: string[]) => {
         if (variant?.id) {
             await addToCart(variant.id, 1);
+            window.localStorage.setItem("emails", emails.join(','));
             push('/checkout');
         } else setAddingError(t('select-options'));
     };

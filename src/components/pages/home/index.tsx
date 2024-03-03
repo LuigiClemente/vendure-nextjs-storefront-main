@@ -1,42 +1,178 @@
-import styled from '@emotion/styled';
-import { InferGetStaticPropsType } from 'next';
 import React, { useEffect } from 'react';
-import { useTranslation } from 'next-i18next';
-import { Stack, ContentContainer } from '@/src/components/atoms';
 import { HomePageSliders } from '@/src/components/organisms/HomePageSliders';
 import { Hero } from '@/src/components/organisms/Hero';
-import { Layout } from '@/src/layouts';
-import type { getStaticProps } from './props';
 import Router from 'next/router';
+import { useCollection } from '@/src/state/collection';
+import styled from '@emotion/styled';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Filter, X } from 'lucide-react';
+import { InferGetStaticPropsType } from 'next';
+import { useTranslation } from 'next-i18next';
+import { ContentContainer, Stack, TP, TH1, MainGrid } from '@/src/components/atoms';
+import { Breadcrumbs } from '@/src/components/molecules';
+import { IconButton } from '@/src/components/molecules/Button';
+import { FacetFilterCheckbox } from '@/src/components/molecules/FacetFilter';
+import { Pagination } from '@/src/components/molecules/Pagination';
+import { ProductTile } from '@/src/components/molecules/ProductTile';
+import { SortBy } from '@/src/components/molecules/SortBy';
+import { getStaticProps } from './props';
+import { Layout } from '@/src/layouts';
+import Image from 'next/image';
 
 const Main = styled(Stack)`
     padding: 0 0 4rem 0;
 `;
 
 export const Home: React.FC<InferGetStaticPropsType<typeof getStaticProps>> = props => {
-    const { t } = useTranslation('homepage');
-    useEffect(() => {
-        Router.push("/collections/plan");
-    }, [])
+    const { t } = useTranslation('collections');
+    const { t: breadcrumb } = useTranslation('common');
+    const {
+        collection,
+        products,
+        facetValues,
+        filtersOpen,
+        setFiltersOpen,
+        paginationInfo,
+        changePage,
+        filters,
+        applyFilter,
+        removeFilter,
+        sort,
+        handleSort,
+    } = useCollection();
+
+    const breadcrumbs = [
+        {
+            name: breadcrumb('breadcrumbs.home'),
+            href: '/',
+        },
+        {
+            name: props.collection?.parent?.name,
+            href: `/collections/${props.collection?.parent?.slug}`,
+        },
+        {
+            name: props.collection?.name,
+            href: `/collections/${props.collection?.parent?.slug}/${props.collection?.slug}`,
+        },
+    ].filter(b => b.name !== '__root_collection__');
 
     return (
-        <Layout navigation={props.navigation} categories={props.categories} pageTitle={t('seo.home')}>
-            <Main w100 column gap="4rem">
-                <Hero
-                    cta={t('hero-cta')}
-                    h1={t('hero-h1')}
-                    h2={t('hero-h2')}
-                    desc={t('hero-p')}
-                    link="/collections/all"
-                    image={
-                        props.products?.find(p => p.slug.includes('laptop'))?.productAsset?.preview ??
-                        (props.products[0]?.productAsset?.preview || '')
-                    }
-                />
-                <ContentContainer>
-                    <HomePageSliders sliders={props.sliders} seeAllText={t('see-all')} />
-                </ContentContainer>
-            </Main>
+        <Layout categories={props.collections} navigation={props.navigation}>
+            <ContentContainer>
+                <AnimatePresence>
+                    {filtersOpen && (
+                        <Facets
+                            onClick={() => setFiltersOpen(false)}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2, ease: 'easeInOut' }}>
+                            <FacetsFilters
+                                onClick={e => e.stopPropagation()}
+                                initial={{ translateX: '-100%' }}
+                                animate={{ translateX: '0%' }}
+                                exit={{ translateX: '-100%' }}
+                                transition={{ duration: 0.3, ease: 'easeInOut' }}>
+                                <Stack column>
+                                    <Stack justifyBetween itemsCenter>
+                                        <TP weight={400} upperCase>
+                                            {t('filters')}
+                                        </TP>
+                                        <IconButton onClick={() => setFiltersOpen(false)}>
+                                            <X />
+                                        </IconButton>
+                                    </Stack>
+                                    <Stack column>
+                                        {facetValues?.map(f => (
+                                            <FacetFilterCheckbox
+                                                facet={f}
+                                                key={f.code}
+                                                selected={filters[f.id]}
+                                                onClick={(group, value) => {
+                                                    if (filters[group.id]?.includes(value.id))
+                                                        removeFilter(group, value);
+                                                    else applyFilter(group, value);
+                                                }}
+                                            />
+                                        ))}
+                                    </Stack>
+                                </Stack>
+                            </FacetsFilters>
+                        </Facets>
+                    )}
+                </AnimatePresence>
+                <RelativeStack gap="2rem" column>
+                    <ScrollPoint id="collection-scroll" />
+                    <Wrapper justifyBetween>
+                        <Stack itemsEnd>
+                            <TH1>{collection?.name}</TH1>
+                        </Stack>
+                    </Wrapper>
+                    <MainGrid>
+                    <div className="togethere-background"></div>
+                        <div className="sr-main">
+                            <h1>Choose a collaboration plan</h1>
+
+                            <div className="price-table-container price-table-containerd">
+                                {products?.map(p => <ProductTile collections={props.collections} product={p} key={p.slug} />)}
+                        </div>
+                    </div>
+                    <div id="error-message" className="error-message"></div>
+                    </MainGrid>
+                    <Pagination
+                        page={paginationInfo.currentPage}
+                        changePage={changePage}
+                        totalPages={paginationInfo.totalPages}
+                    />
+                </RelativeStack>
+            </ContentContainer>
         </Layout>
     );
 };
+
+const Wrapper = styled(Stack)`
+    flex-direction: column;
+    gap: 2rem;
+    @media (min-width: ${p => p.theme.breakpoints.xl}) {
+        flex-direction: row;
+    }
+`;
+
+const RelativeStack = styled(Stack)`
+    position: relative;
+    padding-top: 2rem;
+    @media (min-width: ${p => p.theme.breakpoints.xl}) {
+        padding: 3.5rem 0;
+    }
+`;
+
+const ScrollPoint = styled.div`
+    position: absolute;
+    top: -5rem;
+    left: 0;
+`;
+
+const Filters = styled(Stack)`
+    width: auto;
+    cursor: pointer;
+`;
+
+const Facets = styled(motion.div)`
+    width: 100%;
+    background: ${p => p.theme.grayAlpha(900, 0.5)};
+    position: fixed;
+    inset: 0;
+    z-index: 2138;
+`;
+const FacetsFilters = styled(motion.div)`
+    max-width: fit-content;
+    width: 100%;
+    background: ${p => p.theme.gray(0)};
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    padding: 2rem;
+    left: 0;
+    z-index: 1;
+    overflow-y: auto;
+`;

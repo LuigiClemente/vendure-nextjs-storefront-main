@@ -49,6 +49,7 @@ interface OrderFormProps {
     availableCountries?: AvailableCountriesType[];
     activeCustomer: ActiveCustomerType | null;
     shippingMethods: ShippingMethodType[] | null;
+    emails?: string;
 }
 
 const isAddressesEqual = (a: object, b?: object) => {
@@ -59,7 +60,7 @@ const isAddressesEqual = (a: object, b?: object) => {
     }
 };
 
-export const OrderForm: React.FC<OrderFormProps> = ({ availableCountries, activeCustomer, shippingMethods }) => {
+export const OrderForm: React.FC<OrderFormProps> = ({ availableCountries, activeCustomer, shippingMethods, emails }) => {
     const ctx = useChannels();
     const { activeOrder, changeShippingMethod } = useCheckout();
 
@@ -155,7 +156,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ availableCountries, active
                             ...billing,
                             defaultBillingAddress: false,
                             defaultShippingAddress: false,
-                            // customFields: { NIP }
+                            customFields: { emails }
                         },
                     },
                     {

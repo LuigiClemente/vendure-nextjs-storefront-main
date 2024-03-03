@@ -11,6 +11,8 @@ import { useCart } from '@/src/state/cart';
 import { RootNode } from '@/src/util/arrayToTree';
 import { useChannels } from '@/src/state/channels';
 import { channels } from '@/src/lib/consts';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { ClerkProvider } from '@clerk/nextjs'
 
 export const siteTitle = 'Aexol Next.js Storefront';
 

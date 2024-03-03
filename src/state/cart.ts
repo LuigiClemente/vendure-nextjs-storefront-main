@@ -28,9 +28,20 @@ const useCartContainer = createContainer(() => {
 
     const addToCart = async (id: string, q: number, o?: boolean) => {
         setActiveOrder(c => {
-            return c && { ...c, totalQuantity: c.totalQuantity + 1 };
+            return c && { ...c, totalQuantity: 1 };
         });
         try {
+            await storefrontApiMutation(ctx)({
+                removeAllOrderLines:
+                    {
+                        __typename: true,
+                        '...on Order': ActiveOrderSelector,
+                        '...on OrderModificationError': {
+                            errorCode: true,
+                            message: true,
+                        },
+                    },
+            });
             const { addItemToOrder } = await storefrontApiMutation(ctx)({
                 addItemToOrder: [
                     { productVariantId: id, quantity: q },
@@ -133,6 +144,31 @@ const useCartContainer = createContainer(() => {
             console.log(e);
         }
     };
+    
+    const updateOrderEmails = async (emails: string) => {
+        try {
+            const { setOrderCustomFields } = await storefrontApiMutation(ctx)({
+                setOrderCustomFields: [
+                    { input: {
+                        customFields: {
+                            emails,
+                        }
+                    } },
+                    {
+                        __typename: true,
+                        '...on Order': ActiveOrderSelector,
+                        '...on NoActiveOrderError': {
+                            errorCode: true,
+                            message: true,
+                        },
+                    },
+                ],
+            });
+            return setOrderCustomFields;
+        } catch (e) {
+            console.log(e);
+        }
+    };
 
     const applyCouponCode = async (code: string) => {
         try {
@@ -188,6 +224,7 @@ const useCartContainer = createContainer(() => {
         isOpen,
         open,
         close,
+        updateOrderEmails,
     };
 });
 

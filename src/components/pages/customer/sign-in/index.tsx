@@ -1,122 +1,169 @@
-import { Layout } from '@/src/layouts';
-import { InferGetServerSidePropsType } from 'next';
-import React from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { LoginCustomerInputType } from '@/src/graphql/selectors';
-import { storefrontApiMutation } from '@/src/graphql/client';
 import { Link } from '@/src/components/atoms/Link';
-import { Stack } from '@/src/components/atoms/Stack';
-import { Input, Banner, CheckBox } from '@/src/components/forms';
-import { Button } from '@/src/components/molecules/Button';
-import { ContentContainer } from '@/src/components/atoms/ContentContainer';
-import { usePush } from '@/src/lib/redirect';
-import { useTranslation } from 'next-i18next';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { TP } from '@/src/components/atoms/TypoGraphy';
-import { useCart } from '@/src/state/cart';
-import { Absolute, Form, FormContainer, FormContent, FormWrapper } from '../components/shared';
-import { getServerSideProps } from './props';
-import { useChannels } from '@/src/state/channels';
+import Input from './Input'
 import styled from '@emotion/styled';
+import { InferGetServerSidePropsType } from 'next';
+import { useRouter } from 'next/router';
+import React, { useEffect, useState } from 'react';
+import { SubmitHandler, useForm } from 'react-hook-form';
+import { getServerSideProps } from './props';
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as yup from 'yup'
+import { useToggle } from 'usehooks-ts'
+import siteMetadata from '@/data/siteMetadata'
+import { UserButton } from '@clerk/nextjs'
+import siteInfo from '@/data/siteInfo'
+import DescComponent from './DescComponent';
+import Spinner from './Spinner';
+import { Invite } from '@/src/components/invites/Invite';
+
+type login = {
+    email: string
+    password: string
+    confirmPassword?: 'password'
+}
+
+type LoginUser = Omit<login, 'login'>
+const LOGIN_SCHEMA = yup.object({
+    email: yup.string().required('Please enter a valid email').email(),
+    password: yup.string().required('Please enter your password.'),
+})
+
 
 export const SignInPage: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = props => {
-    const ctx = useChannels();
-    const { t } = useTranslation('customer');
-    const { t: tErrors } = useTranslation('common');
-    const { fetchActiveOrder } = useCart();
-
-    const schema = z.object({
-        emailAddress: z.string().email(tErrors('errors.email.invalid')).min(1, tErrors('errors.email.required')),
-        password: z.string(), //let backend handle this
-        // password: z.string().min(8, tErrors('errors.password.minLength')).max(25, tErrors('errors.password.maxLength')),
-        rememberMe: z.boolean().optional(),
-    });
-
+    const router = useRouter()
     const {
         register,
         handleSubmit,
-        setError,
-        formState: { errors, isSubmitting },
-    } = useForm<LoginCustomerInputType>({
-        resolver: zodResolver(schema),
-    });
-    const push = usePush();
-    const onSubmit: SubmitHandler<LoginCustomerInputType> = async data => {
-        const { emailAddress, password, rememberMe } = data;
-        try {
-            const { login } = await storefrontApiMutation(ctx)({
-                login: [
-                    { password, username: emailAddress, rememberMe },
-                    {
-                        __typename: true,
-                        '...on CurrentUser': { id: true },
-                        '...on InvalidCredentialsError': {
-                            errorCode: true,
-                            message: true,
-                        },
-                        '...on NativeAuthStrategyError': {
-                            errorCode: true,
-                            message: true,
-                        },
-                        '...on NotVerifiedError': {
-                            errorCode: true,
-                            message: true,
-                        },
-                    },
-                ],
-            });
 
-            if (login.__typename === 'CurrentUser') {
-                await fetchActiveOrder();
-                push('/customer/manage');
-                return;
-            }
+        formState: { errors, isSubmitting, isSubmitSuccessful, isValid, isDirty },
+    } = useForm<LoginUser>({
+        resolver: yupResolver(LOGIN_SCHEMA),
+    })
 
-            setError('root', { message: tErrors(`errors.backend.${login.errorCode}`) });
-        } catch {
-            setError('root', { message: tErrors('errors.backend.UNKNOWN_ERROR') });
-        }
-    };
+    const [loading, toggleLoading] = useToggle()
+    const [emails, setEmails] = useState([]);
+    const [changed, setChanged] = useState("");
 
+    const onSubmit: SubmitHandler<LoginUser> = async (values) => {
+        console.log('form value is value', values)
+        // loginCheck(values.email, values.password)
+        const raw = JSON.stringify({
+            "username": values.email,
+            "password": values.password
+        });
+
+        const requestOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: raw,
+        };
+
+        const response = await fetch("http://5.75.148.51:4003/login", requestOptions)
+        const json = await response.json();
+        console.log(json);
+        setEmails(json);
+        setChanged(values.email);
+    }
+
+    useEffect(() => { })
+
+    // const onSubmit = ({ data }) => {
+    //   console.log('Data is >>', data)
+    // }
     return (
-        <Layout categories={props.collections} navigation={props.navigation} pageTitle={t('signInTitle')}>
-            <ContentContainer>
-                <FormContainer>
-                    <FormWrapper column itemsCenter gap="3.5rem">
-                        <Absolute w100>
-                            <Banner error={errors.root} clearErrors={() => setError('root', { message: undefined })} />
-                        </Absolute>
-                        <TP weight={600}>{t('signInTitle')}</TP>
-                        <FormContent w100 column itemsCenter gap="1.75rem">
-                            <Form onSubmit={handleSubmit(onSubmit)}>
-                                <Input
-                                    error={errors.emailAddress}
-                                    label={t('email')}
-                                    type="text"
-                                    {...register('emailAddress')}
-                                />
-                                <Input
-                                    error={errors.password}
-                                    label={t('password')}
-                                    type="password"
-                                    {...register('password')}
-                                />
-                                <CheckBox label={t('rememberMe')} {...register('rememberMe')} />
-                                <Button loading={isSubmitting} type="submit">
-                                    {t('signIn')}
-                                </Button>
-                            </Form>
-                            <Stack column itemsCenter gap="0.5rem">
-                                <StyledLink href="/customer/forgot-password">{t('forgotPassword')}</StyledLink>
-                                <StyledLink href="/customer/sign-up">{t('signUp')}</StyledLink>
-                            </Stack>
-                        </FormContent>
-                    </FormWrapper>
-                </FormContainer>
-            </ContentContainer>
-        </Layout>
-    );
+        <>
+            {changed.length > 0 ?
+                <Invite capacity={emails.length} initEmails={emails} removed={true} owner={changed} />
+                :
+                <section className="mx-auto px-4 sm:px-6 xl:px-0 text-6xl" style={{ width: "1024px", height: "790px" }}>
+                    <div className="mt-30 container h-full pt-20">
+                        <section className="pt-10">
+                            <Spinner />
+                            <div className="mt-30 container h-full pt-20">
+                                <div className="g-6 flex h-full flex-wrap items-center justify-center text-neutral-800 dark:text-neutral-200">
+                                    <div className="w-full">
+                                        <div className="block rounded-lg bg-darkGreen shadow-lg dark:bg-blackDark">
+                                            <div className="g-0 lg:flex lg:flex-wrap">
+                                                {/* <!-- Left column container--> */}
+                                                <div className="px-4 md:px-0 lg:w-6/12">
+                                                    <div className="md:mx-6 md:p-12">
+                                                        {/* <!--Logo--> */}
+                                                        <div className="mb-10 flex w-full flex-wrap items-center justify-center">
+                                                            <div>
+                                                                <Link href="/" aria-label={siteMetadata.headerTitle}>
+                                                                    <div className="flex items-center justify-between text-xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white md:text-3xl">
+                                                                        {typeof siteMetadata.headerTitle === 'string' ? (
+                                                                            <div className="hidden h-6 w-full text-xl font-bold leading-tight tracking-tight text-titleColorLM dark:text-neutral-100 sm:block md:text-3xl">
+                                                                                {siteMetadata.headerTitle}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="hidden h-6 w-full text-3xl font-bold leading-tight tracking-tight text-titleColorLM dark:text-neutral-100 sm:block md:text-3xl">
+                                                                                {siteMetadata.headerTitle}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </Link>
+                                                            </div>
+                                                        </div>
+
+                                                        <form onSubmit={handleSubmit(onSubmit)}>
+                                                            <p className="mb-4 text-subTitleLM dark:text-neutral-200">{`${siteInfo.loginTitle}`}</p>
+                                                            {/* <!--Username input--> */}
+                                                            <Input
+                                                                type={'email'}
+                                                                label={'Email'}
+                                                                name={'email'}
+                                                                register={register}
+                                                                error={errors.email}
+                                                                css="w-full"
+                                                            />
+
+                                                            {/* <!--Password input--> */}
+                                                            <Input
+                                                                type={'password'}
+                                                                label={'Password'}
+                                                                name={'password'}
+                                                                register={register}
+                                                                error={errors.password}
+                                                                css="w-full"
+                                                            />
+
+                                                            {/* <!--Submit button--> */}
+                                                            <div className="mb-12 pb-1 pt-1 text-center">
+                                                                <div className="w-full">
+                                                                    <button
+                                                                        className="mb-3 inline-block w-full rounded px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-txtWhite "
+                                                                        style={{
+                                                                            background:
+                                                                                'linear-gradient(to right, #235475, #56a4d9, #3e95d0, #1495ea)',
+                                                                        }}
+                                                                        type="submit"
+                                                                    >
+                                                                        Log in
+                                                                    </button>
+                                                                    <UserButton afterSignOutUrl="/" />
+                                                                </div>
+
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+
+                                                {/* <!-- Right column container with background and description--> */}
+                                                <DescComponent title={siteInfo.title} description={siteInfo.description} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+            }
+        </>
+    )
 };
 
 const StyledLink = styled(Link)`
