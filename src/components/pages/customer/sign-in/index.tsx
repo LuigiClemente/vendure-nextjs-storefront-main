@@ -41,8 +41,15 @@ export const SignInPage: React.FC<InferGetServerSidePropsType<typeof getServerSi
     })
 
     const [loading, toggleLoading] = useToggle()
-    const [emails, setEmails] = useState([]);
+    const [emails, setEmails] = useState<string[]>([]);
     const [changed, setChanged] = useState("");
+
+    useEffect(() => {
+        if (router.query.email) {
+            setChanged(router.query.email as string);
+            setEmails([router.query.email as string]);
+        }
+    }, [router.query])
 
     const onSubmit: SubmitHandler<LoginUser> = async (values) => {
         console.log('form value is value', values)
@@ -60,7 +67,7 @@ export const SignInPage: React.FC<InferGetServerSidePropsType<typeof getServerSi
             body: raw,
         };
 
-        const response = await fetch("http://5.75.148.51:4003/login", requestOptions)
+        const response = await fetch("https://ngo.gutricious.store/login", requestOptions)
         const json = await response.json();
         console.log(json);
         setEmails(json);

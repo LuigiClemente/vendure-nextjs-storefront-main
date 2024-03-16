@@ -9,7 +9,7 @@ import { privacyContent } from './privacy';
 export const Privacy: React.FC<InferGetStaticPropsType<typeof getStaticProps>> = props => {
     const { t } = useTranslation('homepage');
     return (
-        <Layout navigation={props.navigation} categories={props.categories} pageTitle={t('seo.home')}>
+        <Layout navigation={props.navigation} categories={[]} pageTitle={t('seo.home')}>
             <HtmlContentPrivacyPolicy dangerouslySetInnerHTML={{ __html: privacyContent }} />
         </Layout>
     );

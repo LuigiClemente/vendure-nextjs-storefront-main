@@ -58,7 +58,7 @@ export const Invite: React.FC<Props> = ({ capacity, initEmails, removed, owner }
                   <Button variant="secondary" onClick={() => setDeleteEmail("")}>
                     Close
                   </Button>
-                  <Button variant="danger" onClick={async() => {
+                  <Button variant="danger" onClick={async () => {
                     const requestOptions = {
                       method: "POST",
                       headers: {
@@ -70,9 +70,11 @@ export const Invite: React.FC<Props> = ({ capacity, initEmails, removed, owner }
                       }),
                     };
 
-                    await fetch("http://5.75.148.51:4003/remove", requestOptions);
+                    const res = await fetch("https://ngo.gutricious.store/remove", requestOptions);
+                    const json = await res.json()
                     setDeleteEmail("");
-                    getUsers();
+                    console.log(json, "updateUsers")
+                    setEmails(json);
                   }}>
                     Remove
                   </Button>
@@ -90,7 +92,7 @@ export const Invite: React.FC<Props> = ({ capacity, initEmails, removed, owner }
                   {emails.map((email, index) => (
                     <tr key={index}>
                       <td>{index + 1}</td>
-                      <td>{email}</td>
+                      <td>{email} {email == owner ? "(Yourself)" : ""}</td>
                       <td><Button onClick={() => {
                         if (!removed) {
                           setEmails((l) => l.filter(e => e != email))
@@ -138,7 +140,11 @@ export const Invite: React.FC<Props> = ({ capacity, initEmails, removed, owner }
                   Enter your team member email address you want to add
                 </Form.Text>
               </Form.Group>}
-              {!removed && <Button type="submit" className="mt-0">
+              {!removed && <Button type="submit" disabled={
+                (emails.length != capacity && (!email || users.filter(
+                  (user: any) => user["email"].toLowerCase() == email.toLowerCase()
+                ).length == 0)) ? true : false
+              } className="mt-0">
                 {emails.length == capacity ? "Submit" : "Add"}
               </Button>}
             </Form>

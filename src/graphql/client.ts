@@ -1,6 +1,8 @@
 import { GraphQLError, GraphQLResponse, Thunder, ZeusScalars, chainOptions, fetchOptions } from '@/src/zeus';
 import { GetServerSidePropsContext } from 'next';
 import { getContext } from '@/src/lib/utils';
+import Cookies from 'universal-cookie';
+const cookies = new Cookies();
 
 let token: string | null = typeof window !== 'undefined' ? window.localStorage.getItem('token') : null;
 

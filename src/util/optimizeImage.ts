@@ -13,9 +13,9 @@ type OptimizeImage = {
 };
 
 export const optimizeImage = ({ size, src }: OptimizeImage) => {
-    // if (src?.includes("http://5.75.148.51:3000/assets/")) {
-    //     src = src.substring("http://5.75.148.51:3000/assets/".length);
-    // }
+    if (src?.includes("http://5.75.148.51:3000/assets/")) {
+        src = "https://bao.gutricious.store/assets/" + src.substring("http://5.75.148.51:3000/assets/".length);
+    }
     if (typeof size === 'object') {
         const { width, height, mode, format } = size;
         return `${src}?w=${width}&h=${height}&mode=${mode}&format=${format}`;

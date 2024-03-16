@@ -9,6 +9,7 @@ const SearchableDropdown = ({
 }: any) => {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [error, setError] = useState(false);
 
   const inputRef = useRef(null);
 
@@ -35,6 +36,7 @@ const SearchableDropdown = ({
   };
 
   const filter = (options: any) => {
+    if (!query.toLowerCase().includes("@")) return [];
     return options.filter(
       (option: any) => option[label].toLowerCase() == query.toLowerCase()
     );
@@ -47,9 +49,22 @@ const SearchableDropdown = ({
           <input
             ref={inputRef}
             type="text"
+            onBlur={() => {
+              if (query.length) {
+                if (!options.filter(
+                  (option: any) => option[label].toLowerCase() == query.toLowerCase()
+                ).length) {
+                  setError(true);
+                } else {
+                  setError(false);
+                }
+              }
+
+            }}
             value={getDisplayValue()}
             name="searchTerm"
             onChange={(e) => {
+              setError(false);
               setQuery(e.target.value);
               handleChange(null);
             }}
@@ -74,6 +89,7 @@ const SearchableDropdown = ({
           );
         })}
       </div>
+      {error && <p style={{ color: "red" }}>Couldn't find a user with this email</p>}
     </div>
   );
 };

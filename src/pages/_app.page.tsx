@@ -2,6 +2,7 @@ import React from 'react';
 import '../styles/tailwind.css'
 import '../styles/global.css';
 import 'keen-slider/keen-slider.min.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import { AppProps } from 'next/app';
 import { appWithTranslation } from 'next-i18next';
 import { Nunito_Sans } from 'next/font/google';
@@ -13,6 +14,8 @@ import { ProductProvider } from '@/src/state/product';
 import { CollectionProvider } from '@/src/state/collection';
 import { ChannelsProvider } from '../state/channels';
 import { ClerkProvider } from '@clerk/nextjs';
+import Cookies from 'universal-cookie';
+const cookies = new Cookies();
 
 const nunito = Nunito_Sans({ subsets: ['latin'], variable: '--nunito-font' });
 

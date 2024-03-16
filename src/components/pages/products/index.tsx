@@ -14,7 +14,7 @@ import { Invite } from '../../invites/Invite';
 export const ProductPage: React.FC<InferGetStaticPropsType<typeof getStaticProps>> = props => {
   const ctx = useChannels();
   const { product } = useProduct();
-  const capacity = props.product.slug == "family" ? 4 : 1;
+  const capacity = props.product.slug == "family" ? Number(process.env.NEXT_PUBLIC_FAMILY_LIMIT) : 1;
 
   const [recentlyProducts, setRecentlyProducts] = useState<ProductVariantTileType[]>([]);
 
